@@ -105,7 +105,17 @@ const App: React.FC = () => {
           isApproved: data.is_approved
         });
       } else {
-        console.error("No se pudo obtener ni crear el perfil para el usuario.");
+        console.error("No se pudo obtener ni crear el perfil para el usuario. Aplicando bypass local...");
+        // BYPASS: Si llegamos aquí y hay sesión, creamos un perfil local temporal para no bloquear la pantalla
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setProfile({
+            id: user.id,
+            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+            role: UserRole.MODERATOR, // Por defecto moderador hasta que se sincronice
+            isApproved: false
+          });
+        }
       }
     } catch (err) {
       console.error("Error crítico en fetchProfile:", err);

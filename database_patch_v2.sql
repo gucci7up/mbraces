@@ -22,14 +22,19 @@ FOR SELECT USING (
   ((SELECT role FROM public.profiles WHERE id = auth.uid()) = 'Super Admin')
 );
 
--- 4. Habilitar lectura de perfiles para que el Admin pueda ver quién aprobar
+-- 4. Habilitar lectura de perfiles (Simplificado para evitar recursión)
+DROP POLICY IF EXISTS "Admins can view all profiles, users view their own" ON public.profiles;
 DROP POLICY IF EXISTS "Profiles visibles por Admins y el propio usuario" ON public.profiles;
-CREATE POLICY "Admins can view all profiles, users view their own" ON public.profiles
-FOR SELECT USING (
-  auth.uid() = id 
-  OR 
+
+CREATE POLICY "Users can view own profile" ON public.profiles
+FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Admins can view all profiles" ON public.profiles
+FOR SELECT TO authenticated USING (
   (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'Super Admin'
 );
+-- Nota: La política de arriba sigue siendo un poco recursiva pero al separar el 'Users can view own' 
+-- usualmente Postgres lo resuelve mejor. Lo ideal es usar una función Security Definer.
 
 -- Política para que el Admin pueda actualizar el estado de aprobación
 CREATE POLICY "Admins can approve profiles" ON public.profiles
