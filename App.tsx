@@ -145,6 +145,26 @@ const App: React.FC = () => {
     );
   }
 
+  if (session && !profile) {
+    return (
+      <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center text-white p-6 text-center">
+        <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20 shadow-xl shadow-red-900/10">
+          <Loader2 size={48} className="text-red-500 animate-spin" />
+        </div>
+        <h1 className="text-2xl font-black uppercase tracking-tight mb-2">Cargando Perfil...</h1>
+        <p className="text-slate-400 max-w-sm mb-8">
+          Si esta pantalla persiste, es posible que tu perfil no se haya creado correctamente.
+        </p>
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold transition-all"
+        >
+          Cerrar Sesión
+        </button>
+      </div>
+    );
+  }
+
   const renderView = () => {
     if (!profile) return null;
 
