@@ -161,7 +161,7 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
                 <Database size={14} className="mr-2" /> Motor de Juego [DOG]
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {Object.entries(currentIni.DOG).map(([key, value]) => (
+                {currentIni?.DOG && Object.entries(currentIni.DOG).map(([key, value]) => (
                   <div key={key}>
                     <label className="block text-[9px] font-black text-slate-500 uppercase mb-1.5 ml-1">{key}</label>
                     {typeof value === 'number' ? (
