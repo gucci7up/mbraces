@@ -36,6 +36,43 @@ HEADERS = {
     "Prefer": "return=minimal"
 }
 
+def format_to_iso_time(time_str):
+    """Convierte formatos como '9:32:18 p. m.' a '21:32:18'"""
+    if not time_str: return None
+    t = str(time_str).strip().lower()
+    try:
+        # Normalizar p. m. / a. m.
+        meridiem = ""
+        if 'p.' in t and 'm.' in t: meridiem = "PM"
+        elif 'a.' in t and 'm.' in t: meridiem = "AM"
+        elif 'pm' in t: meridiem = "PM"
+        elif 'am' in t: meridiem = "AM"
+        
+        # Limpiar solo los números y puntos
+        only_time = t.replace('p.', '').replace('m.', '').replace('a.', '').replace('am', '').replace('pm', '').strip()
+        
+        if meridiem:
+            # Intentar parsear 12h
+            formats = ["%I:%M:%S", "%I:%M"]
+            for f in formats:
+                try:
+                    dt = datetime.strptime(only_time, f)
+                    if meridiem == "PM" and dt.hour < 12:
+                        dt = dt.replace(hour=dt.hour + 12)
+                    elif meridiem == "AM" and dt.hour == 12:
+                        dt = dt.replace(hour=0)
+                    return dt.strftime("%H:%M:%S")
+                except: continue
+        else:
+            # Intentar parsear 24h directamente
+            formats = ["%H:%M:%S", "%H:%M"]
+            for f in formats:
+                try:
+                    return datetime.strptime(only_time, f).strftime("%H:%M:%S")
+                except: continue
+    except: pass
+    return time_str # Retornar original si todo falla (Postgres fallará pero logs dirán por qué)
+
 def sync_summary_and_heartbeat():
     """Envía estadísticas diarias y latido de vida al servidor"""
     stats = get_stats_from_db()
@@ -138,7 +175,7 @@ def sync_detailed_data():
                     "race_number": race_num,
                     "numbers": str(t.get('NUMEROS') or ''),
                     "local_date": t.get('FECHA') if t.get('FECHA') else None,
-                    "local_time": t.get('HORA') if t.get('HORA') else None,
+                    "local_time": format_to_iso_time(t.get('HORA')),
                     "raw_data": json.dumps(t, default=str)
                 })
             
@@ -166,7 +203,7 @@ def sync_detailed_data():
                     "race_number": r_num,
                     "winner_numbers": str(r.get('NUMEROS') or ''),
                     "local_date": r.get('FECHA') if r.get('FECHA') else None,
-                    "local_time": r.get('HORA') if r.get('HORA') else None
+                    "local_time": format_to_iso_time(r.get('HORA'))
                 })
             
             if races_payload:
