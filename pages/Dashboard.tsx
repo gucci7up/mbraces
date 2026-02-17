@@ -42,7 +42,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         netIncome: totalSales - totalPayouts,
         lastSync: new Date().toLocaleString('es-DO')
       });
-      setRecentTransactions(txs);
+      setRecentTransactions(
+        [...txs].sort((a, b) => {
+          const aId = a.ticketId || '';
+          const bId = b.ticketId || '';
+          return bId.localeCompare(aId, undefined, { numeric: true });
+        })
+      );
       setRecentRaces(races);
     } catch (err) {
       console.error(err);

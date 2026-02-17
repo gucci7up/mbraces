@@ -58,7 +58,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
   const [dateEnd, setDateEnd] = useState(new Date().toLocaleDateString('en-CA'));
   const [selectedMachine, setSelectedMachine] = useState('ALL');
   const [showPrintModal, setShowPrintModal] = useState(false);
-  const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction | 'calculatedNumbers', direction: 'asc' | 'desc' } | null>({ key: 'numbers', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Transaction | 'calculatedNumbers', direction: 'asc' | 'desc' } | null>({ key: 'ticketId', direction: 'desc' });
 
   const loadData = async () => {
     setLoading(true);
