@@ -1,6 +1,7 @@
 import React from 'react';
-import { LayoutDashboard, Server, FileBarChart, Printer, Settings, LogOut, X, Coins, Shield, User as UserIcon } from 'lucide-react';
+import { LayoutDashboard, Server, FileBarChart, Printer, Settings, LogOut, X, Coins, Shield, User as UserIcon, Users } from 'lucide-react';
 import { User, UserRole, AppSettings } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface SidebarProps {
   currentView: string;
@@ -21,12 +22,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, on
     { id: 'config', label: 'Configuración', icon: Settings },
   ];
 
+  if (user.role === UserRole.SUPER_ADMIN) {
+    menuItems.splice(menuItems.length - 1, 0, { id: 'approvals', label: 'Usuarios', icon: Users });
+  }
+
   return (
     <>
-      <aside 
-        className={`fixed inset-y-0 left-0 z-[70] w-72 bg-[#0f172a] text-slate-100 transform transition-transform duration-300 ease-in-out shadow-2xl ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0`}
+      <aside
+        className={`fixed inset-y-0 left-0 z-[70] w-72 bg-[#0f172a] text-slate-100 transform transition-transform duration-300 ease-in-out shadow-2xl ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          } md:translate-x-0`}
       >
         <div className="h-full flex flex-col">
           {/* BRANDING HEADER - Logo en círculo grande */}
@@ -45,8 +49,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, on
               </div>
             </div>
             {/* Botón cerrar para móvil */}
-            <button 
-              onClick={onClose} 
+            <button
+              onClick={onClose}
               className="md:hidden p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors"
             >
               <X size={20} />
@@ -56,9 +60,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, on
           {/* USER PROFILE CARD */}
           <div className="px-4 mb-6">
             <div className="bg-[#1e293b]/50 rounded-2xl p-4 border border-slate-700/50 flex items-center space-x-3 shadow-inner">
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold shadow-md ${
-                user.role === UserRole.SUPER_ADMIN ? 'bg-indigo-600' : 'bg-orange-500'
-              }`}>
+              <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold shadow-md ${user.role === UserRole.SUPER_ADMIN ? 'bg-indigo-600' : 'bg-orange-500'
+                }`}>
                 {user.role === UserRole.SUPER_ADMIN ? <Shield size={20} /> : <UserIcon size={20} />}
               </div>
               <div className="overflow-hidden">
@@ -82,16 +85,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, on
                     onChangeView(item.id);
                     onClose();
                   }}
-                  className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 group relative overflow-hidden ${
-                    isActive
-                      ? 'bg-[#10b981] text-white shadow-lg shadow-emerald-500/20 font-bold'
-                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-100 font-medium'
-                  }`}
+                  className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 group relative overflow-hidden ${isActive
+                    ? 'bg-[#10b981] text-white shadow-lg shadow-emerald-500/20 font-bold'
+                    : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-100 font-medium'
+                    }`}
                 >
-                  <Icon 
-                    size={22} 
+                  <Icon
+                    size={22}
                     strokeWidth={isActive ? 2.5 : 1.5}
-                    className={`transition-colors ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-emerald-400'}`} 
+                    className={`transition-colors ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-emerald-400'}`}
                   />
                   <span>{item.label}</span>
                 </button>
@@ -101,8 +103,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, on
 
           {/* FOOTER DEL SIDEBAR */}
           <div className="p-4 border-t border-slate-800/50">
-            <button 
-              onClick={() => alert("Cerrando sesión...")}
+            <button
+              onClick={() => supabase.auth.signOut()}
               className="w-full flex items-center justify-center space-x-2 px-4 py-3 text-slate-400 hover:bg-red-500/10 hover:text-red-400 rounded-xl transition-colors text-sm font-bold"
             >
               <LogOut size={18} />

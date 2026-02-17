@@ -6,15 +6,17 @@ import Reports from './pages/Reports';
 import PrintView from './pages/PrintView';
 import Configuration from './pages/Configuration';
 import Jackpot from './pages/Jackpot';
-import { MOCK_USERS } from './data/mockData';
-import { User, AppSettings, AppNotification } from './types';
-import { Users, Loader2 } from 'lucide-react';
+import UserApproval from './pages/UserApproval';
+import AuthScreen from './pages/AuthScreen';
+import { User, AppSettings, AppNotification, UserRole } from './types';
+import { Users, Loader2, ShieldAlert, LogOut } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { getAppSettings } from './data/supabaseService';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState('dashboard');
-  const [currentUser, setCurrentUser] = useState<User>(MOCK_USERS[0]); 
+  const [session, setSession] = useState<any>(null);
+  const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [appSettings, setAppSettings] = useState<AppSettings>({
     appName: 'GalgoTrack',
@@ -25,29 +27,75 @@ const App: React.FC = () => {
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
-  // CARGA INICIAL DE SUPABASE (Settings Globales)
+  // ESCUCHA DE SESIÓN SUPABASE
   useEffect(() => {
-    const initApp = async () => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) fetchProfile(session.user.id);
+      else setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchProfile(session.user.id);
+      else {
+        setProfile(null);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfile = async (userId: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        // Si el perfil no existe todavía (race condition con el trigger), podrías crearlo aquí si fuera necesario
+      } else if (data) {
+        setProfile({
+          id: data.id,
+          name: data.name,
+          role: data.role as UserRole,
+          consortiumName: data.consortium_name,
+          isApproved: data.is_approved
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // CARGA INICIAL DE SETTINGS
+  useEffect(() => {
+    const initSettings = async () => {
       try {
         const settings = await getAppSettings();
         if (settings) setAppSettings(settings);
       } catch (err) {
         console.error("Error cargando settings de Supabase:", err);
-      } finally {
-        setLoading(false);
       }
     };
-    initApp();
+    initSettings();
   }, []);
 
   // SUSCRIPCIÓN REALTIME A ALERTAS
   useEffect(() => {
+    if (!profile?.isApproved) return;
+
     const channel = supabase
       .channel('system-alerts')
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'notifications' 
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications'
       }, (payload) => {
         const newNotif: AppNotification = {
           id: payload.new.id,
@@ -62,72 +110,76 @@ const App: React.FC = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [profile?.isApproved]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white">
-        <Loader2 size={48} className="text-emerald-500 animate-spin mb-4" />
+      <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center text-white">
+        <Loader2 size={48} className="text-orange-500 animate-spin mb-4" />
         <h1 className="text-xl font-black tracking-widest uppercase">Cargando GalgoTrack</h1>
       </div>
     );
   }
 
+  if (!session) {
+    return <AuthScreen />;
+  }
+
+  if (profile && !profile.isApproved) {
+    return (
+      <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center text-white p-6 text-center">
+        <div className="w-24 h-24 bg-orange-500/10 rounded-full flex items-center justify-center mb-6 border border-orange-500/20">
+          <ShieldAlert size={48} className="text-orange-500" />
+        </div>
+        <h1 className="text-3xl font-black uppercase tracking-tight mb-2">Cuenta Pendiente</h1>
+        <p className="text-slate-400 max-w-md mb-8">
+          Tu cuenta ha sido creada exitosamente, pero requiere la aprobación de un administrador para acceder al sistema.
+        </p>
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-bold transition-all flex items-center gap-2"
+        >
+          <LogOut size={18} /> Salir
+        </button>
+      </div>
+    );
+  }
+
   const renderView = () => {
+    if (!profile) return null;
+
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard user={currentUser} />;
+        return <Dashboard user={profile} />;
       case 'machines':
-        return <Machines user={currentUser} />;
+        return <Machines user={profile} />;
       case 'reports':
-        return <Reports user={currentUser} appSettings={appSettings} />;
+        return <Reports user={profile} appSettings={appSettings} />;
       case 'jackpot':
-        return <Jackpot user={currentUser} />;
+        return <Jackpot user={profile} />;
       case 'print':
         return <PrintView appSettings={appSettings} />;
       case 'config':
         return (
-          <Configuration 
-            user={currentUser}
-            appSettings={appSettings} 
-            onUpdateSettings={setAppSettings} 
+          <Configuration
+            user={profile}
+            appSettings={appSettings}
+            onUpdateSettings={setAppSettings}
           />
         );
+      case 'approvals':
+        return profile.role === UserRole.SUPER_ADMIN ? <UserApproval /> : <Dashboard user={profile} />;
       default:
-        return <Dashboard user={currentUser} />;
+        return <Dashboard user={profile} />;
     }
   };
 
   return (
     <>
-       <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center pointer-events-none">
-        <div className="mt-2 bg-slate-800 text-white text-xs rounded-full px-4 py-1.5 shadow-xl pointer-events-auto flex items-center space-x-2 border border-slate-600">
-          <Users size={12} className="text-emerald-400" />
-          <span className="font-bold uppercase tracking-wider text-[10px] text-slate-400">Rol Activo:</span>
-          <select 
-            className="bg-transparent border-none outline-none font-bold text-white cursor-pointer"
-            value={currentUser.id}
-            onChange={(e) => {
-              const user = MOCK_USERS.find(u => u.id === e.target.value);
-              if (user) {
-                setCurrentUser(user);
-                setCurrentView('dashboard');
-              }
-            }}
-          >
-            {MOCK_USERS.map(u => (
-              <option key={u.id} value={u.id} className="text-black">
-                {u.name} ({u.role})
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <Layout 
-        currentView={currentView} 
-        onChangeView={setCurrentView} 
-        user={currentUser}
+      <Layout
+        currentView={currentView}
+        onChangeView={setCurrentView}
+        user={profile!}
         appSettings={appSettings}
         notifications={notifications}
         onMarkAsRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
