@@ -372,7 +372,7 @@ export const deleteTicketsByNumber = async (ticketNumber: string, confirmDelete:
     const { data: transactions, error: transError } = await supabase
       .from('transactions')
       .select('id')
-      .eq('ticketId', ticketNumber);
+      .eq('ticket_id', ticketNumber);
 
     if (transError) throw transError;
 
