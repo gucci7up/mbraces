@@ -76,6 +76,7 @@ export interface Transaction {
   ticketId: string;
   numbers?: string;
   playType?: string;
+  status?: 'active' | 'voided';
 }
 
 export interface DashboardStats {

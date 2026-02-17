@@ -109,6 +109,7 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
     ticketId: t.ticket_id,
     numbers: (t as any).numbers || '',
     playType: (t as any).play_type || '',
+    status: t.status || 'active',
     _created_at: t.created_at
   }));
 
@@ -132,6 +133,7 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
       ticketId: t.ticket_number,
       numbers: t.numbers,
       playType: t.play_type,
+      status: t.status || 'active',
       _created_at: t.created_at
     };
   });
@@ -284,4 +286,21 @@ export const subscribeToJackpot = (onUpdate: (val: number) => void) => {
       onUpdate(parseFloat(payload.new.current_value));
     })
     .subscribe();
+};
+
+/**
+ * ANULACIÓN DE TICKETS
+ */
+export const voidTransaction = async (id: string, isCollector: boolean) => {
+  const table = isCollector ? 'sync_tickets' : 'transactions';
+  const { error } = await supabase
+    .from(table)
+    .update({ status: 'voided' })
+    .eq('id', id);
+
+  if (error) {
+    console.error(`Error anulando en ${table}:`, error.message);
+    throw error;
+  }
+  return true;
 };

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Download, FileSpreadsheet, Trash2, Filter, Search, Printer, FileText, Loader2 } from 'lucide-react';
-import { fetchFilteredTransactions, getTerminals } from '../data/supabaseService';
+import { Calendar, Download, FileSpreadsheet, Trash2, Filter, Search, Printer, FileText, Loader2, XCircle, AlertTriangle } from 'lucide-react';
+import { fetchFilteredTransactions, getTerminals, voidTransaction } from '../data/supabaseService';
 import { Transaction, User, Machine, AppSettings } from '../types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -79,9 +79,33 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
     loadData();
   }, [user, selectedMachine, dateStart, dateEnd]);
 
-  const totalBet = transactions.filter(t => t.type === 'BET').reduce((sum, t) => sum + t.amount, 0);
-  const totalPayout = transactions.filter(t => t.type === 'PAYOUT').reduce((sum, t) => sum + t.amount, 0);
+  const activeTransactions = transactions.filter(t => t.status !== 'voided');
+
+  const totalBet = activeTransactions.filter(t => t.type === 'BET').reduce((sum, t) => sum + t.amount, 0);
+  const totalPayout = activeTransactions.filter(t => t.type === 'PAYOUT').reduce((sum, t) => sum + t.amount, 0);
   const profit = totalBet - totalPayout;
+
+  const handleVoidTicket = async (id: string, ticketNumber: string) => {
+    if (!window.confirm(`¿Está seguro de que desea ANULAR el ticket #${ticketNumber}? Esta acción no se puede deshacer y ajustará los totales.`)) {
+      return;
+    }
+
+    try {
+      // Determinar si es un ticket del collector o transacción manual
+      const targetTx = transactions.find(t => t.id === id);
+      const isCollector = !!(targetTx as any)._created_at; // Los filtrados ahora traen _created_at de ambos
+      // O mejor, basarnos en si viene de sync_tickets (tienen ticketId numérico usualmente) 
+      // pero en fetchFilteredTransactions unificamos. 
+      // Una forma segura es ver si el ID es UUID (transacciones manuales) o numérico/texto (sync).
+
+      await voidTransaction(id, isCollector);
+      await loadData(); // Recargar datos para ver el cambio
+      alert("Ticket anulado con éxito.");
+    } catch (err) {
+      console.error(err);
+      alert("Error al anular el ticket.");
+    }
+  };
 
   const handleThermalPrint = () => {
     window.print();
@@ -154,13 +178,22 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Terminal</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Tipo</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">NUMERO</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">NUMERO</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest text-right">Monto</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest text-center">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {transactions.map(t => (
-                <tr key={t.id} className="hover:bg-slate-50/50">
-                  <td className="px-6 py-4 text-xs font-mono">{t.ticketId}</td>
+                <tr key={t.id} className={`hover:bg-slate-50/50 ${t.status === 'voided' ? 'opacity-40 grayscale' : ''}`}>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className={`text-xs font-mono font-bold ${t.status === 'voided' ? 'line-through' : ''}`}>{t.ticketId}</span>
+                      {t.status === 'voided' && (
+                        <span className="text-[9px] font-black text-red-500 uppercase tracking-tighter">ANULADO</span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 font-bold text-slate-700">{t.machineName}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${t.type === 'BET' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
@@ -170,8 +203,19 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
                   <td className="px-6 py-4 text-xs font-black text-slate-600">
                     {t.numbers || <span className="text-slate-300">-</span>}
                   </td>
-                  <td className={`px-6 py-4 text-right font-black ${t.type === 'BET' ? 'text-emerald-600' : 'text-slate-900'}`}>
+                  <td className={`px-6 py-4 text-right font-black ${t.status === 'voided' ? 'text-slate-400' : t.type === 'BET' ? 'text-emerald-600' : 'text-slate-900'}`}>
                     RD${t.amount.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    {t.status !== 'voided' && (
+                      <button
+                        onClick={() => handleVoidTicket(t.id, t.ticketId)}
+                        className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                        title="Anular Ticket"
+                      >
+                        <XCircle size={18} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
