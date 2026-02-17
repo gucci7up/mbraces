@@ -50,16 +50,39 @@ const App: React.FC = () => {
   const fetchProfile = async (userId: string) => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // 1. Intentar obtener el perfil
+      let { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) {
-        console.error("Error fetching profile:", error);
-        // Si el perfil no existe todavía (race condition con el trigger), podrías crearlo aquí si fuera necesario
-      } else if (data) {
+      // 2. Si no existe (error PGRST116), intentar crearlo (útil si falló el trigger o hay lag)
+      if (error && (error.code === 'PGRST116' || error.message.includes('No rows'))) {
+        console.log("Perfil no encontrado, intentando crear uno básico...");
+        const { data: { user } } = await supabase.auth.getUser();
+
+        const newProfile = {
+          id: userId,
+          name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario',
+          role: 'Moderador',
+          is_approved: false
+        };
+
+        const { data: createdData, error: insertError } = await supabase
+          .from('profiles')
+          .insert([newProfile])
+          .select()
+          .single();
+
+        if (!insertError) {
+          data = createdData;
+        } else {
+          console.error("Error creando perfil automático:", insertError);
+        }
+      }
+
+      if (data) {
         setProfile({
           id: data.id,
           name: data.name,
@@ -68,6 +91,8 @@ const App: React.FC = () => {
           isApproved: data.is_approved
         });
       }
+    } catch (err) {
+      console.error("Error fatal en fetchProfile:", err);
     } finally {
       setLoading(false);
     }
