@@ -27,7 +27,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
       const totalSales = terminals.reduce((acc, curr) => acc + (parseFloat(curr.daily_sales) || 0), 0);
       const totalPayouts = terminals.reduce((acc, curr) => acc + (parseFloat(curr.daily_payouts) || 0), 0);
-      const onlineCount = terminals.filter(m => m.status === 'En Línea').length;
+      const oneMinuteAgo = new Date(Date.now() - 60000);
+      const onlineCount = terminals.filter(m =>
+        m.status === 'En Línea' &&
+        m.last_sync &&
+        new Date(m.last_sync) > oneMinuteAgo
+      ).length;
 
       setStats({
         totalMachines: terminals.length,

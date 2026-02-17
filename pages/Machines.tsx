@@ -89,9 +89,14 @@ const Machines: React.FC<MachinesProps> = ({ user }) => {
     }
   };
 
+  const oneMinuteAgo = new Date(Date.now() - 60000);
+
   const filteredMachines = machines.filter(m =>
     m.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ).map(m => {
+    const isOnline = m.status === 'En Línea' && m.last_sync && new Date(m.last_sync) > oneMinuteAgo;
+    return { ...m, calculatedStatus: isOnline ? 'En Línea' : 'Desconectado' };
+  });
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -151,8 +156,8 @@ const Machines: React.FC<MachinesProps> = ({ user }) => {
                   <tr key={m.id} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${m.status === 'En Línea' && m.last_sync && new Date(m.last_sync) > new Date(Date.now() - 60000)
-                            ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${m.calculatedStatus === 'En Línea'
+                          ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
                           }`}>
                           <Database size={20} />
                         </div>
@@ -191,10 +196,10 @@ const Machines: React.FC<MachinesProps> = ({ user }) => {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="text-slate-400 text-xs">{m.last_sync ? new Date(m.last_sync).toLocaleTimeString() : 'Nunca'}</div>
-                      <div className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${m.status === 'En Línea' && m.last_sync && new Date(m.last_sync) > new Date(Date.now() - 60000)
-                          ? 'text-emerald-500' : 'text-slate-300'
+                      <div className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${m.calculatedStatus === 'En Línea'
+                        ? 'text-emerald-500' : 'text-slate-300'
                         }`}>
-                        {m.status === 'En Línea' && m.last_sync && new Date(m.last_sync) > new Date(Date.now() - 60000) ? 'En Línea' : 'Desconectado'}
+                        {m.calculatedStatus}
                       </div>
                     </td>
                   </tr>
