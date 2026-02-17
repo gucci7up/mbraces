@@ -138,19 +138,28 @@ export const updateIniConfig = async (terminalId: string, config: IniConfig) => 
 
 export const createTerminal = async (user: User, terminalData: Partial<Machine>) => {
   const defaultIni: IniConfig = {
-    dog: {
-      inicio: 0,
-      minutos: 15,
-      porsentaje: 20,
-      jack: 100,
-      jackweb: 50,
-      maxjack: 5000,
-      maxjackweb: 2500,
-      bono: 0,
-      rcd: 0
+    DOG: {
+      INICIO: 48,
+      MINUTOS: 5,
+      PORSENTAJE: 25,
+      jack: 2000.00,
+      jackweb: 1000.00,
+      maxjack: 20000.00,
+      maxjackweb: 1000.00,
+      BONO: 100,
+      RCD: 5,
+      MUL_A: 0,
+      NUMERO_MUL: 0,
+      BONUS_A: 0,
+      NUMERO_BONUS: 0,
+      JACKPOT: 'FALSE',
+      TABLA: 2,
+      RCD_CARRERA: 4,
+      play: '37.webm',
+      JACK_LOCAL: 300
     },
-    pantalla: {
-      mensaje: `BIENVENIDOS A ${user.consortiumName || 'SISTEMA'}`
+    PANTALLA: {
+      MENSAJE: `BIENVENIDOS A ${user.consortiumName || 'MBRACES'}`
     }
   };
 

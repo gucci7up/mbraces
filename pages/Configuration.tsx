@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Upload, FileCode, Monitor, DollarSign, Clock, Hash, AlertTriangle, Printer, Store, Users, Image as ImageIcon, Trash2, CheckCircle2 } from 'lucide-react';
+import { Save, Upload, FileCode, Monitor, DollarSign, Clock, Hash, AlertTriangle, Printer, Store, Users, Image as ImageIcon, Trash2, CheckCircle2, Database } from 'lucide-react';
 import { IniConfig, AppSettings, User, UserRole } from '../types';
 import { getTerminals, updateIniConfig, updateAppSettings } from '../data/supabaseService';
 
@@ -50,15 +50,15 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
     }
   };
 
-  const handleIniChange = (section: 'dog' | 'pantalla', key: string, value: any) => {
+  const handleIniChange = (section: 'DOG' | 'PANTALLA', key: string, value: any) => {
     if (!currentIni) return;
     setCurrentIni({
       ...currentIni,
       [section]: {
-        ...currentIni[section],
+        ...currentIni[section as keyof IniConfig],
         [key]: value
       }
-    });
+    } as IniConfig);
   };
 
   const handleSyncIni = async () => {
@@ -154,27 +154,67 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
         </div>
 
         {currentIni ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {Object.keys(currentIni.dog).map(key => (
-              <div key={key}>
-                <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">{key}</label>
+          <div className="space-y-10">
+            {/* SECCIÓN DOG */}
+            <div>
+              <h4 className="text-indigo-400 font-black text-xs uppercase tracking-[0.3em] mb-6 flex items-center">
+                <Database size={14} className="mr-2" /> Motor de Juego [DOG]
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {Object.entries(currentIni.DOG).map(([key, value]) => (
+                  <div key={key}>
+                    <label className="block text-[9px] font-black text-slate-500 uppercase mb-1.5 ml-1">{key}</label>
+                    {typeof value === 'number' ? (
+                      <input
+                        type="number"
+                        step="any"
+                        value={value}
+                        onChange={e => handleIniChange('DOG', key, Number(e.target.value))}
+                        className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-slate-800"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={value as string}
+                        onChange={e => handleIniChange('DOG', key, e.target.value)}
+                        className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-slate-800"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* SECCIÓN PANTALLA */}
+            <div>
+              <h4 className="text-amber-400 font-black text-xs uppercase tracking-[0.3em] mb-6 flex items-center">
+                <Monitor size={14} className="mr-2" /> Visualización [PANTALLA]
+              </h4>
+              <div>
+                <label className="block text-[9px] font-black text-slate-500 uppercase mb-1.5 ml-1">MENSAJE</label>
                 <input
-                  type="number"
-                  value={(currentIni.dog as any)[key]}
-                  onChange={e => handleIniChange('dog', key, Number(e.target.value))}
-                  className="w-full bg-slate-800 border border-slate-700 text-indigo-400 font-mono rounded-xl px-4 py-3 outline-none focus:border-indigo-500"
+                  type="text"
+                  value={currentIni.PANTALLA.MENSAJE}
+                  onChange={e => handleIniChange('PANTALLA', 'MENSAJE', e.target.value)}
+                  className="w-full bg-slate-800/50 border border-slate-700/50 text-white font-mono rounded-xl px-4 py-3 outline-none focus:border-amber-500 focus:bg-slate-800"
                 />
               </div>
-            ))}
-            <div className="md:col-span-3 pt-6 border-t border-slate-800 mt-4 flex justify-end">
-              <button onClick={handleSyncIni} disabled={isSaving} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center space-x-2">
+            </div>
+
+            <div className="pt-10 border-t border-slate-800 mt-4 flex justify-end">
+              <button onClick={handleSyncIni} disabled={isSaving} className="bg-indigo-600 text-white px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest flex items-center space-x-2 shadow-xl shadow-indigo-500/20 hover:bg-indigo-500 transition-all active:scale-95">
                 <Save size={18} />
                 <span>Sincronizar con Terminal</span>
               </button>
             </div>
           </div>
         ) : (
-          <div className="text-center py-10 text-slate-500 font-bold uppercase text-xs tracking-widest">Selecciona una terminal para editar</div>
+          <div className="text-center py-20 bg-slate-800/20 rounded-3xl border border-dashed border-slate-800">
+            <div className="animate-pulse flex flex-col items-center">
+              <FileCode size={40} className="text-slate-700 mb-4" />
+              <p className="text-slate-600 font-black text-xs uppercase tracking-widest">Selecciona una terminal para editar</p>
+            </div>
+          </div>
         )}
       </div>
     </div>

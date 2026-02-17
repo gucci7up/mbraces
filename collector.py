@@ -14,6 +14,7 @@ from datetime import datetime, date
 
 # --- CONFIGURACIÓN ---
 config = configparser.ConfigParser()
+config.optionxform = str # Preservar mayúsculas/minúsculas en los nombres de las llaves
 config.read('config.ini', encoding='utf-8')
 
 try:
@@ -231,6 +232,7 @@ def sync_config_ini():
 
             # Leer .INI local para comparar o actualizar
             local_ini = configparser.ConfigParser()
+            local_ini.optionxform = str
             if os.path.exists(INI_PATH):
                 local_ini.read(INI_PATH, encoding='utf-8')
             

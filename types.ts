@@ -86,19 +86,31 @@ export interface DashboardStats {
 }
 
 export interface IniConfig {
-  dog: {
-    inicio: number;
-    minutos: number;
-    porsentaje: number;
+  DOG: {
+    INICIO: number;
+    MINUTOS: number;
+    PORSENTAJE: number;
     jack: number;
     jackweb: number;
     maxjack: number;
     maxjackweb: number;
-    bono: number;
-    rcd: number;
+    BONO: number;
+    RCD: number;
+    MUL_A: number;
+    NUMERO_MUL: number;
+    BONUS_A: number;
+    NUMERO_BONUS: number;
+    JACKPOT: string; // 'TRUE' | 'FALSE'
+    TABLA: number;
+    RCD_CARRERA: number;
+    play: string;
+    JACK_LOCAL: number;
   };
-  pantalla: {
-    mensaje: string;
+  PANTALLA: {
+    MENSAJE: string;
+  };
+  CARRERA?: {
+    [key: string]: string;
   };
 }
 
