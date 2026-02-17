@@ -11,7 +11,7 @@ export const getProfile = async (userId: string) => {
     .select('*')
     .eq('id', userId)
     .single();
-  
+
   if (error) {
     console.error("Error obteniendo perfil:", error.message);
     return null;
@@ -84,12 +84,12 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
   if (filters?.end) query = query.lte('created_at', `${filters.end}T23:59:59`);
 
   const { data, error } = await query;
-  
+
   if (error) {
     console.error("Error obteniendo transacciones:", error.message);
     throw error;
   }
-  
+
   return data.map(t => ({
     id: t.id,
     date: new Date(t.created_at).toLocaleString('es-DO'),
@@ -106,13 +106,13 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
  */
 export const getTerminals = async (user: User) => {
   let query = supabase.from('terminals').select('*');
-  
+
   if (user.role !== UserRole.SUPER_ADMIN) {
     query = query.eq('owner_id', user.id);
   }
 
   const { data, error } = await query;
-  
+
   if (error) {
     console.error("Error obteniendo terminales:", error.message);
     throw error;
@@ -123,9 +123,9 @@ export const getTerminals = async (user: User) => {
 export const updateIniConfig = async (terminalId: string, config: IniConfig) => {
   const { error } = await supabase
     .from('terminals')
-    .update({ 
-      ini_content: config, 
-      last_sync: new Date().toISOString() 
+    .update({
+      ini_content: config,
+      last_sync: new Date().toISOString()
     })
     .eq('id', terminalId);
 
@@ -134,6 +134,48 @@ export const updateIniConfig = async (terminalId: string, config: IniConfig) => 
     throw error;
   }
   return true;
+};
+
+export const createTerminal = async (user: User, terminalData: Partial<Machine>) => {
+  const defaultIni: IniConfig = {
+    dog: {
+      inicio: 0,
+      minutos: 15,
+      porsentaje: 20,
+      jack: 100,
+      jackweb: 50,
+      maxjack: 5000,
+      maxjackweb: 2500,
+      bono: 0,
+      rcd: 0
+    },
+    pantalla: {
+      mensaje: `BIENVENIDOS A ${user.consortiumName || 'SISTEMA'}`
+    }
+  };
+
+  const { data, error } = await supabase
+    .from('terminals')
+    .insert([{
+      owner_id: user.id,
+      name: terminalData.name,
+      address: terminalData.address,
+      phone: terminalData.phone,
+      manager: terminalData.manager,
+      type: terminalData.type,
+      status: 'Desconectado',
+      ini_content: defaultIni,
+      last_sync: new Date().toISOString(),
+      software_version: 'v1.0.0'
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creando terminal:", error.message);
+    throw error;
+  }
+  return data;
 };
 
 /**
@@ -156,10 +198,10 @@ export const getJackpotValue = async () => {
 export const subscribeToJackpot = (onUpdate: (val: number) => void) => {
   return supabase
     .channel('jackpot-realtime')
-    .on('postgres_changes', { 
-      event: 'UPDATE', 
-      schema: 'public', 
-      table: 'jackpot_values' 
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'jackpot_values'
     }, (payload) => {
       onUpdate(parseFloat(payload.new.current_value));
     })
