@@ -76,6 +76,37 @@ def format_to_iso_time(time_str):
 
 from datetime import datetime, date, timezone # Importar timezone
 
+def read_ini_file():
+    """Lee el archivo INI del sistema de carreras y lo convierte a JSON"""
+    if not os.path.exists(INI_PATH):
+        print(f"Advertencia: Archivo INI no encontrado en {INI_PATH}")
+        return None
+    
+    try:
+        ini_config = configparser.ConfigParser()
+        ini_config.optionxform = str  # Preservar mayúsculas
+        ini_config.read(INI_PATH, encoding='utf-8')
+        
+        # Convertir a diccionario
+        ini_dict = {}
+        for section in ini_config.sections():
+            ini_dict[section] = {}
+            for key, value in ini_config.items(section):
+                # Intentar convertir números
+                try:
+                    if '.' in value:
+                        ini_dict[section][key] = float(value)
+                    else:
+                        ini_dict[section][key] = int(value)
+                except:
+                    # Mantener como string si no es número
+                    ini_dict[section][key] = value
+        
+        return ini_dict
+    except Exception as e:
+        print(f"Error leyendo archivo INI: {e}")
+        return None
+
 def sync_summary_and_heartbeat():
     """Envía estadísticas diarias y latido de vida al servidor"""
     stats = get_stats_from_db()
@@ -87,13 +118,18 @@ def sync_summary_and_heartbeat():
     # Usar timezone-aware UTC para evitar advertencias de depreciación
     now_iso = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     
+    
+    # Leer archivo INI del sistema de carreras
+    ini_content = read_ini_file()
+    
     payload = {
         "last_sync": now_iso,
         "status": "En Línea",
         "last_race_number": stats['carrera_actual'],
         "last_ticket_number": stats['ticket_actual'],
         "daily_sales": stats['ventas'],
-        "daily_payouts": stats['pagos']
+        "daily_payouts": stats['pagos'],
+        "ini_content": ini_content  # Agregar contenido del INI
     }
 
     headers = HEADERS.copy()
