@@ -112,18 +112,29 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
     _created_at: t.created_at
   }));
 
-  const syncTickets = (ticketRes.data || []).map(t => ({
-    id: t.id,
-    date: `${t.local_date} ${t.local_time || ''}`,
-    machineId: t.terminal_id,
-    machineName: (t.get_terminals || (t as any).terminals)?.name || 'Terminal Sync',
-    type: 'BET' as const,
-    amount: parseFloat(t.amount),
-    ticketId: t.ticket_number,
-    numbers: t.numbers,
-    playType: t.play_type,
-    _created_at: t.created_at
-  }));
+  const syncTickets = (ticketRes.data || []).map(t => {
+    // Extraer el tipo de ticket del raw_data
+    let ticketType: 'BET' | 'PAYOUT' = 'BET';
+    try {
+      const rawData = typeof t.raw_data === 'string' ? JSON.parse(t.raw_data) : t.raw_data;
+      ticketType = rawData?._ticket_type === 'PAYOUT' ? 'PAYOUT' : 'BET';
+    } catch (e) {
+      // Si falla el parsing, asumimos BET por defecto
+    }
+
+    return {
+      id: t.id,
+      date: `${t.local_date} ${t.local_time || ''}`,
+      machineId: t.terminal_id,
+      machineName: (t.get_terminals || (t as any).terminals)?.name || 'Terminal Sync',
+      type: ticketType,
+      amount: parseFloat(t.amount),
+      ticketId: t.ticket_number,
+      numbers: t.numbers,
+      playType: t.play_type,
+      _created_at: t.created_at
+    };
+  });
 
   // Unificar y ordenar por fecha de creación (más recientes primero)
   const combined = [...txs, ...syncTickets] as (Transaction & { _created_at: string })[];

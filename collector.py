@@ -171,7 +171,7 @@ def sync_detailed_data():
         cursor = conn.cursor()
         today = date.today().strftime('%Y-%m-%d')
         
-        # 1. Sync Tickets (Solo TIKETS_VENDIDOS_P según preferencia del usuario)
+        # 1. Sync Tickets Vendidos (TIKETS_VENDIDOS_P)
         all_tickets = []
         
         try:
@@ -180,9 +180,25 @@ def sync_detailed_data():
             for r in rows:
                 t = dict(r)
                 t["_source_table"] = "TIKETS_VENDIDOS_P"
+                t["_ticket_type"] = "BET"
                 all_tickets.append(t)
         except Exception as e:
             print(f"Aviso: Tabla TIKETS_VENDIDOS_P no disponible o error: {e}")
+
+        # 2. Sync Tickets Pagados (TIKETS_PAGADOS_P)
+        try:
+            cursor.execute(f"SELECT * FROM TIKETS_PAGADOS_P WHERE FECHA = ? LIMIT 100", (today,))
+            rows = cursor.fetchall()
+            for r in rows:
+                t = dict(r)
+                t["_source_table"] = "TIKETS_PAGADOS_P"
+                t["_ticket_type"] = "PAYOUT"
+                # Mapear PREMIO a MONTO para compatibilidad
+                if 'PREMIO' in t and 'MONTO' not in t:
+                    t['MONTO'] = t['PREMIO']
+                all_tickets.append(t)
+        except Exception as e:
+            print(f"Aviso: Tabla TIKETS_PAGADOS_P no disponible o error: {e}")
 
         if all_tickets:
             tickets_payload = []
