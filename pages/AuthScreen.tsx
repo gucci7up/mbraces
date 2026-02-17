@@ -9,6 +9,7 @@ const AuthScreen: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
+    const [dob, setDob] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
 
@@ -32,6 +33,7 @@ const AuthScreen: React.FC = () => {
                     options: {
                         data: {
                             full_name: fullName,
+                            dob: dob,
                         }
                     }
                 });
@@ -47,7 +49,8 @@ const AuthScreen: React.FC = () => {
                                 id: data.user.id,
                                 name: fullName,
                                 role: 'Moderador',
-                                is_approved: false
+                                is_approved: false,
+                                // Podríamos añadir dob aquí también si actualizamos la tabla profiles
                             }
                         ]);
 
@@ -183,13 +186,15 @@ const AuthScreen: React.FC = () => {
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <Calendar size={18} className="text-slate-500" />
                                     </div>
-                                    <select className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all appearance-none cursor-pointer">
-                                        <option value="" className="bg-slate-900">Select</option>
-                                    </select>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={dob}
+                                        onChange={(e) => setDob(e.target.value)}
+                                        className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all appearance-none cursor-pointer [color-scheme:dark]"
+                                    />
                                     <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                                        <motion.div animate={{ rotate: 0 }}>
-                                            <LogIn size={14} className="text-slate-500 rotate-90" />
-                                        </motion.div>
+                                        <LogIn size={14} className="text-slate-500 rotate-90" />
                                     </div>
                                 </div>
                             </div>
