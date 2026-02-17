@@ -23,7 +23,7 @@ const ThermalTicket: React.FC<ThermalTicketProps> = ({ data, logoUrl, headerName
             padding: 0;
           }
           #thermal-ticket-area {
-            width: 70mm !important;
+            width: 68mm !important;
             margin: 0 auto !important;
             padding: 5mm !important;
             border: none !important;
@@ -33,7 +33,7 @@ const ThermalTicket: React.FC<ThermalTicketProps> = ({ data, logoUrl, headerName
       `}} />
       <div
         id="thermal-ticket-area"
-        className="bg-white text-black font-mono text-[11px] py-6 px-4 w-[70mm] mx-auto border border-gray-100 shadow-sm print:shadow-none print:border-none print:p-0 print:mx-0 overflow-hidden"
+        className="bg-white text-black font-mono text-[11px] py-6 px-4 w-[68mm] mx-auto border border-gray-100 shadow-sm print:shadow-none print:border-none print:p-0 print:mx-0 overflow-hidden"
       >
         <div className="text-center mb-6">
           {logoUrl && (
