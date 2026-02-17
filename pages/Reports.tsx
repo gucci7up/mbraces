@@ -22,6 +22,10 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
         }
         .print-area {
           display: block !important;
+          visibility: visible !important;
+          height: auto !important;
+          overflow: visible !important;
+          position: relative !important;
         }
         @page {
           size: letter;
