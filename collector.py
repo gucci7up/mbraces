@@ -74,6 +74,8 @@ def format_to_iso_time(time_str):
     except: pass
     return time_str # Retornar original si todo falla (Postgres fallará pero logs dirán por qué)
 
+from datetime import datetime, date, timezone # Importar timezone
+
 def sync_summary_and_heartbeat():
     """Envía estadísticas diarias y latido de vida al servidor"""
     stats = get_stats_from_db()
@@ -82,8 +84,8 @@ def sync_summary_and_heartbeat():
     # Endpoint: PATCH a terminals
     url = f"{SUPABASE_URL}/rest/v1/terminals?id=eq.{MACHINE_ID}&auth_token=eq.{MACHINE_TOKEN}"
     
-    # Usar UTC con sufijo Z para máxima compatibilidad con el navegador
-    now_iso = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+    # Usar timezone-aware UTC para evitar advertencias de depreciación
+    now_iso = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     
     payload = {
         "last_sync": now_iso,
@@ -95,19 +97,20 @@ def sync_summary_and_heartbeat():
     }
 
     headers = HEADERS.copy()
-    headers["Prefer"] = "return=representation" # Pedir que devuelva los datos para confirmar actualización
+    headers["Prefer"] = "return=representation"
 
     try:
         res = requests.patch(url, headers=headers, json=payload, timeout=5)
         if res.status_code in [200, 201]:
             data = res.json()
             if not data:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ADVERTENCIA: Heartbeat enviado pero NO se encontró ninguna terminal con ese ID/Token en Supabase.")
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ADVERTENCIA: Credenciales Incorrectas.")
+                print(f"      - Verifica que el 'id' ({MACHINE_ID}) y 'token' ({MACHINE_TOKEN}) en config.ini sean correctos.")
+                print(f"      - Búscalos en el panel web: Sección 'Máquinas' -> Botón 'Copiar ID/Token'.")
             else:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat OK | Ventas: ${stats['ventas']} | Online")
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat OK | Ventas Today: ${stats['ventas']} | Online 🟢")
         elif res.status_code == 204:
-             # Si el server no devuelve representación, al menos sabemos que el status fue OK
-             print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat OK (204) | Ventas: ${stats['ventas']}")
+             print(f"[{datetime.now().strftime('%H:%M:%S')}] Heartbeat OK (No representation) | Ventas Today: ${stats['ventas']}")
         else:
             print(f"Error Heartbeat: {res.status_code} - {res.text}")
     except Exception as e:
@@ -168,18 +171,34 @@ def sync_detailed_data():
         cursor = conn.cursor()
         today = date.today().strftime('%Y-%m-%d')
         
-        # 1. Sync Tickets
-        cursor.execute("SELECT * FROM TIKETS_VENDIDOS_P WHERE FECHA = ? LIMIT 100", (today,))
-        tickets = [dict(r) for r in cursor.fetchall()]
-        if tickets:
+        # 1. Sync Tickets (Probamos todas las tablas de juegos: P, C, G)
+        tablas_tickets = ["TIKETS_VENDIDOS_P", "TIKETS_VENDIDOS_C", "TIKETS_VENDIDOS_G"]
+        all_tickets = []
+        
+        for tabla in tablas_tickets:
+            try:
+                cursor.execute(f"SELECT * FROM {tabla} WHERE FECHA = ? LIMIT 50", (today,))
+                rows = cursor.fetchall()
+                for r in rows:
+                    t = dict(r)
+                    t["_source_table"] = tabla # Para trazabilidad
+                    all_tickets.append(t)
+            except Exception as e:
+                print(f"Aviso: Tabla {tabla} no disponible o error: {e}")
+
+        if all_tickets:
             tickets_payload = []
-            for t in tickets:
-                # Usar TIKET o ID (visto en GALDOS.db)
+            for t in all_tickets:
+                # Usar TIKET o ID
                 t_num = str(t.get('TIKET') or t.get('TICKET') or t.get('ID') or '')
                 if not t_num: continue
                 
-                # Usar RACE o CARRERA (visto en GALDOS.db: TIKETS_VENDIDOS_P usa RACE)
-                race_num = str(t.get('RACE') or t.get('CARRERA') or '')
+                # Mapeo de Números/Jugada (El usuario pide NUMERO)
+                # En _P y _C es NUMEROS. En _G suele ser VALOR.
+                jugada = str(t.get('NUMEROS') or t.get('VALOR') or '')
+                
+                # Mapeo de Carrera/Pelea
+                race_num = str(t.get('RACE') or t.get('CARRERA') or t.get('PELEA') or '')
                 
                 tickets_payload.append({
                     "terminal_id": MACHINE_ID,
@@ -187,7 +206,7 @@ def sync_detailed_data():
                     "amount": float(t.get('MONTO') or 0),
                     "odds": float(t.get('VALOR') or 0),
                     "race_number": race_num,
-                    "numbers": str(t.get('NUMEROS') or ''),
+                    "numbers": jugada,
                     "local_date": t.get('FECHA') if t.get('FECHA') else None,
                     "local_time": format_to_iso_time(t.get('HORA')),
                     "raw_data": json.dumps(t, default=str)
@@ -199,23 +218,30 @@ def sync_detailed_data():
                     if res.status_code not in [200, 201, 204]:
                         print(f"Error Sync Tickets: {res.status_code} - {res.text}")
                     else:
-                        print(f"Sync Tickets OK ({len(tickets_payload)} registros)")
+                        print(f"Sync Tickets OK ({len(tickets_payload)} registros de {len(all_tickets)} leídos)")
                 except Exception as e:
                     print(f"Error Conexión Sync Tickets: {e}")
 
-        # 2. Sync Races
-        cursor.execute("SELECT * FROM RACE_P ORDER BY ID DESC LIMIT 20")
-        races = [dict(r) for r in cursor.fetchall()]
-        if races:
+        # 2. Sync Races (Resultados de Carreras P, C y G)
+        tablas_races = ["RACE_P", "RACE_C", "RACE_G"]
+        all_races = []
+        for tabla in tablas_races:
+            try:
+                cursor.execute(f"SELECT * FROM {tabla} ORDER BY ID DESC LIMIT 10")
+                all_races.extend([dict(r) for r in cursor.fetchall()])
+            except: pass
+
+        if all_races:
             races_payload = []
-            for r in races:
-                r_num = str(r.get('CARRERA') or '')
+            for r in all_races:
+                # En las tablas RACE_X, el número de carrera suele ser CARRERA o RACE
+                r_num = str(r.get('CARRERA') or r.get('RACE') or r.get('PELEA') or '')
                 if not r_num: continue
                 
                 races_payload.append({
                     "terminal_id": MACHINE_ID,
                     "race_number": r_num,
-                    "winner_numbers": str(r.get('NUMEROS') or ''),
+                    "winner_numbers": str(r.get('NUMEROS') or r.get('WINNERS') or r.get('VALOR') or ''),
                     "local_date": r.get('FECHA') if r.get('FECHA') else None,
                     "local_time": format_to_iso_time(r.get('HORA'))
                 })
