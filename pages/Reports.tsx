@@ -12,6 +12,45 @@ interface ReportsProps {
 }
 
 const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
+  // Agregar estilos de impresión
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .print-area, .print-area * {
+          visibility: visible;
+        }
+        .print-area {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        .no-print {
+          display: none !important;
+        }
+        @page {
+          size: letter;
+          margin: 1cm;
+        }
+        table {
+          page-break-inside: auto;
+        }
+        tr {
+          page-break-inside: avoid;
+          page-break-after: auto;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [userMachines, setUserMachines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,6 +174,62 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* PRINT-ONLY SECTION */}
+      <div className="print-area" style={{ display: 'none' }}>
+        <div style={{ padding: '20px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>
+            {appSettings?.ticketName || 'MBRACES'}
+          </h1>
+          <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Reporte de Transacciones</h2>
+          <p style={{ marginBottom: '10px' }}>
+            <strong>Período:</strong> {dateStart} - {dateEnd}
+          </p>
+          <p style={{ marginBottom: '10px' }}>
+            <strong>Terminal:</strong> {selectedMachine === 'ALL' ? 'Todas' : userMachines.find(m => m.id === selectedMachine)?.name}
+          </p>
+
+          <div style={{ marginTop: '20px', marginBottom: '20px', display: 'flex', gap: '20px' }}>
+            <div>
+              <p style={{ fontSize: '12px', color: '#666' }}>Total Ventas</p>
+              <p style={{ fontSize: '20px', fontWeight: 'bold' }}>RD${totalBet.toLocaleString()}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '12px', color: '#666' }}>Total Pagos</p>
+              <p style={{ fontSize: '20px', fontWeight: 'bold' }}>RD${totalPayout.toLocaleString()}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: '12px', color: '#666' }}>Ganancia Neta</p>
+              <p style={{ fontSize: '20px', fontWeight: 'bold' }}>RD${profit.toLocaleString()}</p>
+            </div>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #000' }}>
+                <th style={{ padding: '8px', textAlign: 'left', fontSize: '10px' }}>Ticket</th>
+                <th style={{ padding: '8px', textAlign: 'left', fontSize: '10px' }}>Fecha</th>
+                <th style={{ padding: '8px', textAlign: 'left', fontSize: '10px' }}>Terminal</th>
+                <th style={{ padding: '8px', textAlign: 'left', fontSize: '10px' }}>Tipo</th>
+                <th style={{ padding: '8px', textAlign: 'left', fontSize: '10px' }}>Número</th>
+                <th style={{ padding: '8px', textAlign: 'right', fontSize: '10px' }}>Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((t) => (
+                <tr key={t.id} style={{ borderBottom: '1px solid #ddd' }}>
+                  <td style={{ padding: '6px', fontSize: '9px' }}>{t.ticketId}</td>
+                  <td style={{ padding: '6px', fontSize: '9px' }}>{t.date}</td>
+                  <td style={{ padding: '6px', fontSize: '9px' }}>{t.machineName}</td>
+                  <td style={{ padding: '6px', fontSize: '9px' }}>{t.type}</td>
+                  <td style={{ padding: '6px', fontSize: '9px' }}>{t.numbers || '-'}</td>
+                  <td style={{ padding: '6px', textAlign: 'right', fontSize: '9px' }}>RD${t.amount.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
