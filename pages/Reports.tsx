@@ -5,6 +5,7 @@ import { fetchFilteredTransactions, getTerminals } from '../data/supabaseService
 import { Transaction, User, Machine, AppSettings } from '../types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import ThermalReport from '../components/ThermalReport';
 
 interface ReportsProps {
   user: User;
@@ -56,7 +57,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
   const [dateStart, setDateStart] = useState(new Date().toLocaleDateString('en-CA'));
   const [dateEnd, setDateEnd] = useState(new Date().toLocaleDateString('en-CA'));
   const [selectedMachine, setSelectedMachine] = useState('ALL');
-  const [showThermalPrint, setShowThermalPrint] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -83,56 +84,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
   const profit = totalBet - totalPayout;
 
   const handleThermalPrint = () => {
-    // Crear contenido para impresora térmica 80mm
-    let receipt = '\x1B\x40'; // Inicializar impresora
-    receipt += '\x1B\x61\x01'; // Centrar texto
-    receipt += '\x1B\x21\x30'; // Texto grande y negrita
-    receipt += `${appSettings?.ticketName || 'MBRACES'}\n`;
-    receipt += '\x1B\x21\x00'; // Texto normal
-    receipt += '================================\n';
-    receipt += 'REPORTE DE TRANSACCIONES\n';
-    receipt += '================================\n';
-    receipt += '\x1B\x61\x00'; // Alinear izquierda
-    receipt += `Periodo: ${dateStart} - ${dateEnd}\n`;
-    receipt += `Terminal: ${selectedMachine === 'ALL' ? 'Todas' : userMachines.find(m => m.id === selectedMachine)?.name || 'N/A'}\n`;
-    receipt += `Fecha Impresion: ${new Date().toLocaleString('es-DO')}\n`;
-    receipt += '--------------------------------\n';
-    receipt += '\x1B\x21\x08'; // Negrita
-    receipt += 'RESUMEN\n';
-    receipt += '\x1B\x21\x00'; // Normal
-    receipt += `Total Ventas:    RD$${totalBet.toLocaleString()}\n`;
-    receipt += `Total Pagos:     RD$${totalPayout.toLocaleString()}\n`;
-    receipt += '--------------------------------\n';
-    receipt += '\x1B\x21\x18'; // Doble altura y negrita
-    receipt += `GANANCIA: RD$${profit.toLocaleString()}\n`;
-    receipt += '\x1B\x21\x00'; // Normal
-    receipt += '================================\n';
-    receipt += 'DETALLE DE TRANSACCIONES\n';
-    receipt += '================================\n';
-
-    // Listar transacciones
-    transactions.forEach((t, index) => {
-      receipt += `#${index + 1} - ${t.ticketId}\n`;
-      receipt += `${t.date}\n`;
-      receipt += `Terminal: ${t.machineName}\n`;
-      receipt += `Tipo: ${t.type} | Num: ${t.numbers || '-'}\n`;
-      receipt += `Monto: RD$${t.amount.toLocaleString()}\n`;
-      receipt += '--------------------------------\n';
-    });
-
-    receipt += '\n\n\n';
-    receipt += '\x1D\x56\x00'; // Cortar papel
-
-    // Crear blob y descargar
-    const blob = new Blob([receipt], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reporte_${dateStart}_${dateEnd}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    window.print();
   };
 
   const handleExportPDF = () => {
@@ -151,14 +103,14 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-end no-print">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Reportes</h1>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Reportes y Jugadas</h1>
           <p className="text-slate-500 mt-1">Sincronizado con base de datos centralizada.</p>
         </div>
         <div className="flex space-x-2">
           <button onClick={handleExportPDF} className="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center space-x-2">
             <FileText size={16} /> <span>PDF</span>
           </button>
-          <button onClick={() => { setShowThermalPrint(true); setTimeout(() => window.print(), 500); }} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center space-x-2">
+          <button onClick={() => setShowPrintModal(true)} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center space-x-2 transition-all hover:bg-slate-800 active:scale-95 shadow-lg shadow-slate-900/20">
             <Printer size={16} /> <span>Imprimir 80mm</span>
           </button>
         </div>
@@ -228,7 +180,79 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
         )}
       </div>
 
-      {/* PRINT-ONLY SECTION */}
+      {/* Modal de Vista Previa de Impresión */}
+      {showPrintModal && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 no-print overflow-y-auto">
+          <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 my-8">
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div>
+                <h3 className="text-xl font-black text-slate-900">Vista Previa</h3>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Formato Térmico 80mm</p>
+              </div>
+              <button
+                onClick={() => setShowPrintModal(false)}
+                className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+              >
+                <Trash2 size={24} className="rotate-45" />
+              </button>
+            </div>
+
+            <div className="p-6 bg-slate-200/50 flex justify-center max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <div className="bg-white shadow-lg border border-slate-200 p-2">
+                <ThermalReport
+                  transactions={transactions}
+                  dateStart={dateStart}
+                  dateEnd={dateEnd}
+                  selectedMachine={selectedMachine}
+                  machineName={selectedMachine === 'ALL' ? 'Todas' : userMachines.find(m => m.id === selectedMachine)?.name || 'N/A'}
+                  totalBet={totalBet}
+                  totalPayout={totalPayout}
+                  profit={profit}
+                  headerName={appSettings?.ticketName}
+                  logoUrl={appSettings?.ticketLogo}
+                />
+              </div>
+            </div>
+
+            <div className="p-8 bg-white space-y-3">
+              <button
+                onClick={() => {
+                  window.print();
+                  setShowPrintModal(false);
+                }}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-600/30 transition-all flex items-center justify-center space-x-2 active:scale-[0.98]"
+              >
+                <Printer size={18} />
+                <span>Confirmar Impresión</span>
+              </button>
+              <button
+                onClick={() => setShowPrintModal(false)}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-500 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RENDERIZADO PARA IMPRESORA (HIDDEN ON SCREEN) */}
+      <div className="hidden print:block absolute inset-0 bg-white z-[9999]">
+        <ThermalReport
+          transactions={transactions}
+          dateStart={dateStart}
+          dateEnd={dateEnd}
+          selectedMachine={selectedMachine}
+          machineName={selectedMachine === 'ALL' ? 'Todas' : userMachines.find(m => m.id === selectedMachine)?.name || 'N/A'}
+          totalBet={totalBet}
+          totalPayout={totalPayout}
+          profit={profit}
+          headerName={appSettings?.ticketName}
+          logoUrl={appSettings?.ticketLogo}
+        />
+      </div>
+
+      {/* Antiguo PrintView (Hidden or safe to remove if not used elsewhere) */}
       <div className="print-area hidden md:block" style={{ visibility: 'hidden', height: 0, overflow: 'hidden' }}>
         <div style={{ padding: '20px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>
@@ -283,24 +307,6 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
           </table>
         </div>
       </div>
-
-      {/* Thermal Report Component - Hidden on screen, visible when printing */}
-      {showThermalPrint && (
-        <div className="hidden print:block">
-          <ThermalReport
-            transactions={transactions}
-            dateStart={dateStart}
-            dateEnd={dateEnd}
-            selectedMachine={selectedMachine}
-            machineName={selectedMachine === 'ALL' ? 'Todas' : userMachines.find(m => m.id === selectedMachine)?.name || 'N/A'}
-            totalBet={totalBet}
-            totalPayout={totalPayout}
-            profit={profit}
-            headerName={appSettings?.ticketName}
-            logoUrl={appSettings?.ticketLogo}
-          />
-        </div>
-      )}
     </div>
   );
 };
