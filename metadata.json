@@ -1,0 +1,5 @@
+{
+  "name": "GalgoTrack Admin",
+  "description": "Sistema administrativo moderno para gestión de carreras de galgos, control de máquinas, reportes financieros y utilidades de impresión térmica.",
+  "requestFramePermissions": []
+}

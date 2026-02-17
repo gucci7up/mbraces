@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.env.local
+.env
+README.md
+Dockerfile
+nginx.conf
+schema.sql
+task.md
+implementation_plan.md
+walkthrough.md
