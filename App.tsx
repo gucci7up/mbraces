@@ -8,6 +8,7 @@ import Configuration from './pages/Configuration';
 import Jackpot from './pages/Jackpot';
 import UserApproval from './pages/UserApproval';
 import AuthScreen from './pages/AuthScreen';
+import { DeleteTickets } from './pages/DeleteTickets';
 import { User, AppSettings, AppNotification, UserRole } from './types';
 import { Users, Loader2, ShieldAlert, LogOut } from 'lucide-react';
 import { supabase } from './lib/supabase';
@@ -267,6 +268,8 @@ const App: React.FC = () => {
         return <Machines user={profile} />;
       case 'reports':
         return <Reports user={profile} appSettings={appSettings} />;
+      case 'delete-tickets':
+        return <DeleteTickets user={profile} />;
       case 'jackpot':
         return <Jackpot user={profile} />;
       case 'print':

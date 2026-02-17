@@ -348,3 +348,66 @@ export const voidTransaction = async (id: string, isCollector: boolean) => {
 
   return true;
 };
+
+/**
+ * ELIMINACIÓN PERMANENTE DE TICKETS POR NÚMERO
+ * Busca y elimina todos los tickets con el número especificado
+ * @param ticketNumber - El número de ticket a eliminar (ej: "TCK-12345")
+ * @param confirmDelete - Si es true, ejecuta la eliminación. Si es false, solo cuenta.
+ * @returns Objeto con el conteo de tickets encontrados/eliminados
+ */
+export const deleteTicketsByNumber = async (ticketNumber: string, confirmDelete: boolean = false) => {
+  let totalCount = 0;
+
+  try {
+    // 1. Buscar en sync_tickets (tickets del collector)
+    const { data: syncTickets, error: syncError } = await supabase
+      .from('sync_tickets')
+      .select('id')
+      .eq('ticket_number', ticketNumber);
+
+    if (syncError) throw syncError;
+
+    // 2. Buscar en transactions (tickets manuales)
+    const { data: transactions, error: transError } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('ticketId', ticketNumber);
+
+    if (transError) throw transError;
+
+    totalCount = (syncTickets?.length || 0) + (transactions?.length || 0);
+
+    // Si solo estamos contando, retornamos aquí
+    if (!confirmDelete) {
+      return { count: totalCount };
+    }
+
+    // 3. Eliminar permanentemente si confirmDelete = true
+    if (syncTickets && syncTickets.length > 0) {
+      const syncIds = syncTickets.map(t => t.id);
+      const { error: deleteSyncError } = await supabase
+        .from('sync_tickets')
+        .delete()
+        .in('id', syncIds);
+
+      if (deleteSyncError) throw deleteSyncError;
+    }
+
+    if (transactions && transactions.length > 0) {
+      const transIds = transactions.map(t => t.id);
+      const { error: deleteTransError } = await supabase
+        .from('transactions')
+        .delete()
+        .in('id', transIds);
+
+      if (deleteTransError) throw deleteTransError;
+    }
+
+    return { count: totalCount, deleted: true };
+
+  } catch (error: any) {
+    console.error('Error al eliminar tickets:', error.message);
+    throw new Error(error.message || 'Error al eliminar tickets');
+  }
+};

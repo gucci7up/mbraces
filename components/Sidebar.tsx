@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Server, FileBarChart, Printer, Settings, LogOut, X, Coins, Shield, User as UserIcon, Users } from 'lucide-react';
+import { LayoutDashboard, Server, FileBarChart, Printer, Settings, LogOut, X, Coins, Shield, User as UserIcon, Users, Trash2 } from 'lucide-react';
 import { User, UserRole, AppSettings } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -17,6 +17,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, isOpen, on
     { id: 'dashboard', label: 'Panel Principal', icon: LayoutDashboard },
     { id: 'machines', label: 'Máquinas', icon: Server },
     { id: 'reports', label: 'Reportes y Jugadas', icon: FileBarChart },
+    { id: 'delete-tickets', label: 'Eliminar Tickets', icon: Trash2 },
     { id: 'jackpot', label: 'Control Jackpot', icon: Coins },
     { id: 'print', label: 'Impresión 80mm', icon: Printer },
     { id: 'config', label: 'Configuración', icon: Settings },
