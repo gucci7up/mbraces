@@ -66,23 +66,36 @@ def get_stats_from_db():
     if not os.path.exists(SQLITE_PATH): return None
     try:
         conn = sqlite3.connect(SQLITE_PATH)
+        conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         today = date.today().strftime('%Y-%m-%d')
         
         # Ventas y Pagos
-        cursor.execute("SELECT COALESCE(SUM(CAST(VENTAS AS REAL)),0), COALESCE(SUM(CAST(PAGOS AS REAL)),0) FROM VENTAS_P WHERE FECHA = ?", (today,))
+        cursor.execute("SELECT COALESCE(SUM(CAST(VENTAS AS REAL)),0) as v, COALESCE(SUM(CAST(PAGOS AS REAL)),0) as p FROM VENTAS_P WHERE FECHA = ?", (today,))
         row = cursor.fetchone()
-        ventas, pagos = (float(row[0]), float(row[1])) if row else (0, 0)
+        ventas, pagos = (float(row['v']), float(row['p'])) if row else (0, 0)
         
         # Carrera actual
-        cursor.execute("SELECT CARRERA FROM RACE_P ORDER BY ID DESC LIMIT 1")
+        cursor.execute("SELECT * FROM RACE_P ORDER BY ID DESC LIMIT 1")
         row = cursor.fetchone()
-        carrera_actual = str(row[0]) if row else ""
+        carrera_actual = str(row['CARRERA'] if row and 'CARRERA' in row.keys() else "")
         
-        # Último ticket
-        cursor.execute("SELECT TICKET FROM TIKETS_P ORDER BY ID DESC LIMIT 1")
-        row = cursor.fetchone()
-        ticket_actual = str(row[0]) if row else ""
+        # Último ticket (Intentar TICKET, TIKET o ID)
+        ticket_actual = ""
+        try:
+            # Primero intentamos la tabla principal de tickets del día
+            cursor.execute("SELECT * FROM TIKETS_P ORDER BY ID DESC LIMIT 1")
+            row = cursor.fetchone()
+            if row:
+                ticket_actual = str(row['TICKET'] if 'TICKET' in row.keys() else row['TIKET'] if 'TIKET' in row.keys() else row['ID'])
+        except:
+            try:
+                # Si falla, probamos con la tabla de vendidos
+                cursor.execute("SELECT * FROM TIKETS_VENDIDOS_P ORDER BY ID DESC LIMIT 1")
+                row = cursor.fetchone()
+                if row:
+                    ticket_actual = str(row['TICKET'] if 'TICKET' in row.keys() else row['TIKET'] if 'TIKET' in row.keys() else row['ID'])
+            except: pass
         
         conn.close()
         return {
@@ -108,35 +121,59 @@ def sync_detailed_data():
         cursor.execute("SELECT * FROM TIKETS_VENDIDOS_P WHERE FECHA = ? LIMIT 100", (today,))
         tickets = [dict(r) for r in cursor.fetchall()]
         if tickets:
-            tickets_payload = [{
-                "terminal_id": MACHINE_ID,
-                "ticket_number": str(t.get('TICKET') or t.get('TIKET') or t.get('ID')),
-                "amount": float(t.get('MONTO') or 0),
-                "odds": float(t.get('VALOR') or 0),
-                "race_number": str(t.get('CARRERA') or ''),
-                "numbers": str(t.get('NUMEROS') or ''),
-                "local_date": t.get('FECHA'),
-                "local_time": t.get('HORA'),
-                "raw_data": json.dumps(t, default=str)
-            } for t in tickets]
+            tickets_payload = []
+            for t in tickets:
+                t_num = str(t.get('TICKET') or t.get('TIKET') or t.get('ID') or '')
+                if not t_num: continue
+                
+                tickets_payload.append({
+                    "terminal_id": MACHINE_ID,
+                    "ticket_number": t_num,
+                    "amount": float(t.get('MONTO') or 0),
+                    "odds": float(t.get('VALOR') or 0),
+                    "race_number": str(t.get('CARRERA') or ''),
+                    "numbers": str(t.get('NUMEROS') or ''),
+                    "local_date": t.get('FECHA') if t.get('FECHA') else None,
+                    "local_time": t.get('HORA') if t.get('HORA') else None,
+                    "raw_data": json.dumps(t, default=str)
+                })
             
-            res = requests.post(f"{SUPABASE_URL}/rest/v1/sync_tickets", headers=HEADERS, json=tickets_payload)
-            print(f"Sync Tickets: {res.status_code} ({len(tickets)} registros)")
+            if tickets_payload:
+                try:
+                    res = requests.post(f"{SUPABASE_URL}/rest/v1/sync_tickets", headers=HEADERS, json=tickets_payload, timeout=10)
+                    if res.status_code not in [200, 201, 204]:
+                        print(f"Error Sync Tickets: {res.status_code} - {res.text}")
+                    else:
+                        print(f"Sync Tickets OK ({len(tickets_payload)} registros)")
+                except Exception as e:
+                    print(f"Error Conexión Sync Tickets: {e}")
 
         # 2. Sync Races
         cursor.execute("SELECT * FROM RACE_P ORDER BY ID DESC LIMIT 20")
         races = [dict(r) for r in cursor.fetchall()]
         if races:
-            races_payload = [{
-                "terminal_id": MACHINE_ID,
-                "race_number": str(r.get('CARRERA') or ''),
-                "winner_numbers": str(r.get('NUMEROS') or ''),
-                "local_date": r.get('FECHA'),
-                "local_time": r.get('HORA')
-            } for r in races]
+            races_payload = []
+            for r in races:
+                r_num = str(r.get('CARRERA') or '')
+                if not r_num: continue
+                
+                races_payload.append({
+                    "terminal_id": MACHINE_ID,
+                    "race_number": r_num,
+                    "winner_numbers": str(r.get('NUMEROS') or ''),
+                    "local_date": r.get('FECHA') if r.get('FECHA') else None,
+                    "local_time": r.get('HORA') if r.get('HORA') else None
+                })
             
-            res = requests.post(f"{SUPABASE_URL}/rest/v1/sync_races", headers=HEADERS, json=races_payload)
-            print(f"Sync Races: {res.status_code} ({len(races)} registros)")
+            if races_payload:
+                try:
+                    res = requests.post(f"{SUPABASE_URL}/rest/v1/sync_races", headers=HEADERS, json=races_payload, timeout=10)
+                    if res.status_code not in [200, 201, 204]:
+                        print(f"Error Sync Races: {res.status_code} - {res.text}")
+                    else:
+                        print(f"Sync Races OK ({len(races_payload)} registros)")
+                except Exception as e:
+                    print(f"Error Conexión Sync Races: {e}")
             
         conn.close()
     except Exception as e:
