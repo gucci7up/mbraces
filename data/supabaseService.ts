@@ -110,6 +110,7 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
     numbers: (t as any).numbers || '',
     playType: (t as any).play_type || '',
     status: t.status || 'active',
+    isCollector: false,
     _created_at: t.created_at
   }));
 
@@ -134,6 +135,7 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
       numbers: t.numbers,
       playType: t.play_type,
       status: t.status || 'active',
+      isCollector: true,
       _created_at: t.created_at
     };
   });

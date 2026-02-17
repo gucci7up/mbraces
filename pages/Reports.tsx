@@ -91,12 +91,8 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
     }
 
     try {
-      // Determinar si es un ticket del collector o transacción manual
       const targetTx = transactions.find(t => t.id === id);
-      const isCollector = !!(targetTx as any)._created_at; // Los filtrados ahora traen _created_at de ambos
-      // O mejor, basarnos en si viene de sync_tickets (tienen ticketId numérico usualmente) 
-      // pero en fetchFilteredTransactions unificamos. 
-      // Una forma segura es ver si el ID es UUID (transacciones manuales) o numérico/texto (sync).
+      const isCollector = targetTx?.isCollector || false;
 
       await voidTransaction(id, isCollector);
       await loadData(); // Recargar datos para ver el cambio
@@ -177,7 +173,6 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Ticket</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Terminal</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Tipo</th>
-                <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">NUMERO</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">NUMERO</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest text-right">Monto</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest text-center">Acción</th>

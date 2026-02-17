@@ -77,6 +77,7 @@ export interface Transaction {
   numbers?: string;
   playType?: string;
   status?: 'active' | 'voided';
+  isCollector?: boolean;
 }
 
 export interface DashboardStats {
