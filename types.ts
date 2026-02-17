@@ -94,20 +94,20 @@ export interface IniConfig {
     INICIO: number;
     MINUTOS: number;
     PORSENTAJE: number;
-    JACK: number;
-    JACKWEB: number;
-    MAXJACK: number;
-    MAXJACKWEB: number;
+    jack: number;
+    jackweb: number;
+    maxjack: number;
+    maxjackweb: number;
     BONO: number;
     RCD: number;
     MUL_A: number;
     NUMERO_MUL: number;
     BONUS_A: number;
     NUMERO_BONUS: number;
-    JACKPOT: string; // 'TRUE' | 'FALSE'
+    JACKPOT: string;
     TABLA: number;
     RCD_CARRERA: number;
-    PLAY: string;
+    play: string;
     JACK_LOCAL: number;
   };
   PANTALLA: {

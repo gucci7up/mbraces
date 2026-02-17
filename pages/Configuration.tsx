@@ -52,23 +52,13 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
 
   const handleIniChange = (section: 'DOG' | 'PANTALLA', key: string, value: any) => {
     if (!currentIni) return;
-
-    // Convertir la clave a mayúsculas para asegurar consistencia
-    const uppercaseKey = key.toUpperCase();
-
-    const newSection = { ...currentIni[section] } as any;
-
-    // Si existe la versión en minúsculas, la eliminamos para evitar duplicados
-    if (newSection[key.toLowerCase()] !== undefined && key.toLowerCase() !== uppercaseKey.toLowerCase()) {
-      delete newSection[key.toLowerCase()];
-    }
-
-    newSection[uppercaseKey] = value;
-
     setCurrentIni({
       ...currentIni,
-      [section]: newSection
-    });
+      [section]: {
+        ...currentIni[section as keyof IniConfig],
+        [key]: value
+      }
+    } as IniConfig);
   };
 
   const handleSyncIni = async () => {
@@ -171,14 +161,14 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
                 <Database size={14} className="mr-2" /> Motor de Juego [DOG]
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Campos específicos solicitados por el usuario */}
+                {/* Campos específicos con el casing exacto requerido por el motor */}
                 {[
-                  { key: 'JACK', label: 'JACKPOT ACTUAL', type: 'number' },
+                  { key: 'jack', label: 'JACKPOT ACTUAL', type: 'number' },
                   { key: 'JACK_LOCAL', label: 'JACKPOT LOCAL', type: 'number' },
                   { key: 'JACKPOT', label: 'HABILITAR JACKPOT', type: 'select', options: ['TRUE', 'FALSE'] },
-                  { key: 'JACKWEB', label: 'JACKPOT WEB', type: 'number' },
-                  { key: 'MAXJACK', label: 'MAXIMO JACKPOT', type: 'number' },
-                  { key: 'MAXJACKWEB', label: 'MAXIMO JACKPOT WEB', type: 'number' },
+                  { key: 'jackweb', label: 'JACKPOT WEB', type: 'number' },
+                  { key: 'maxjack', label: 'MAXIMO JACKPOT', type: 'number' },
+                  { key: 'maxjackweb', label: 'MAXIMO JACKPOT WEB', type: 'number' },
                 ].map((field) => (
                   <div key={field.key}>
                     <label className="block text-[9px] font-black text-slate-500 uppercase mb-1.5 ml-1">{field.label}</label>
