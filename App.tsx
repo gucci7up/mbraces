@@ -49,6 +49,7 @@ const App: React.FC = () => {
 
   const fetchProfile = async (userId: string) => {
     setLoading(true);
+    console.log("Iniciando fetchProfile para:", userId);
     try {
       // 1. Intentar obtener el perfil
       let { data, error } = await supabase
@@ -57,28 +58,41 @@ const App: React.FC = () => {
         .eq('id', userId)
         .single();
 
-      // 2. Si no existe (error PGRST116), intentar crearlo (útil si falló el trigger o hay lag)
-      if (error && (error.code === 'PGRST116' || error.message.includes('No rows'))) {
-        console.log("Perfil no encontrado, intentando crear uno básico...");
+      if (error) {
+        console.warn("Error inicial buscando perfil:", error.message);
+
+        // 2. Si hay error (no solo 406), intentamos crear/obtener de nuevo
         const { data: { user } } = await supabase.auth.getUser();
 
-        const newProfile = {
-          id: userId,
-          name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario',
-          role: 'Moderador',
-          is_approved: false
-        };
+        if (user) {
+          const newProfile = {
+            id: userId,
+            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+            role: 'Moderador',
+            is_approved: false
+          };
 
-        const { data: createdData, error: insertError } = await supabase
-          .from('profiles')
-          .insert([newProfile])
-          .select()
-          .single();
+          console.log("Intentando crear perfil para el usuario logueado...");
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .upsert([newProfile], { onConflict: 'id' });
 
-        if (!insertError) {
-          data = createdData;
-        } else {
-          console.error("Error creando perfil automático:", insertError);
+          if (insertError) {
+            console.error("Error en upsert de perfil:", insertError.message);
+          }
+
+          // Intentamos leerlo una última vez después del upsert
+          const { data: finalData, error: finalError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+          if (finalData) {
+            data = finalData;
+          } else if (finalError) {
+            console.error("Error final leyendo perfil:", finalError.message);
+          }
         }
       }
 
@@ -90,9 +104,11 @@ const App: React.FC = () => {
           consortiumName: data.consortium_name,
           isApproved: data.is_approved
         });
+      } else {
+        console.error("No se pudo obtener ni crear el perfil para el usuario.");
       }
     } catch (err) {
-      console.error("Error fatal en fetchProfile:", err);
+      console.error("Error crítico en fetchProfile:", err);
     } finally {
       setLoading(false);
     }
