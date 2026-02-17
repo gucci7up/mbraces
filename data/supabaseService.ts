@@ -107,6 +107,7 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
     type: t.type,
     amount: parseFloat(t.amount),
     ticketId: t.ticket_id,
+    numbers: (t as any).numbers || '', // Soporte para jugadas manuales si existen
     _created_at: t.created_at
   }));
 
@@ -118,6 +119,7 @@ export const fetchFilteredTransactions = async (user: User, filters?: { terminal
     type: 'BET' as const,
     amount: parseFloat(t.amount),
     ticketId: t.ticket_number,
+    numbers: t.numbers, // Campo clave del collector
     _created_at: t.created_at
   }));
 

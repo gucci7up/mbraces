@@ -50,8 +50,8 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
     doc.text(appSettings?.ticketName || 'MBRACES', 14, 22);
     autoTable(doc, {
       startY: 40,
-      head: [['Ticket', 'Fecha', 'Terminal', 'Tipo', 'Monto']],
-      body: transactions.map(t => [t.ticketId, t.date, t.machineName, t.type, `RD$${t.amount.toLocaleString()}`]),
+      head: [['Ticket', 'Fecha', 'Terminal', 'Tipo', 'NUMERO', 'Monto']],
+      body: transactions.map(t => [t.ticketId, t.date, t.machineName, t.type, t.numbers || '-', `RD$${t.amount.toLocaleString()}`]),
     });
     doc.save('reporte.pdf');
   };
@@ -110,6 +110,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Ticket</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Terminal</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">Tipo</th>
+                <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest">NUMERO</th>
                 <th className="px-6 py-4 font-black text-slate-400 uppercase text-[10px] tracking-widest text-right">Monto</th>
               </tr>
             </thead>
@@ -122,6 +123,9 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
                     <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${t.type === 'BET' ? 'bg-blue-50 text-blue-600' : 'bg-orange-50 text-orange-600'}`}>
                       {t.type}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 text-xs font-black text-slate-600">
+                    {t.numbers || <span className="text-slate-300">-</span>}
                   </td>
                   <td className={`px-6 py-4 text-right font-black ${t.type === 'BET' ? 'text-emerald-600' : 'text-slate-900'}`}>
                     RD${t.amount.toLocaleString()}

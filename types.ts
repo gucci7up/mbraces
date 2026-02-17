@@ -74,6 +74,7 @@ export interface Transaction {
   type: 'BET' | 'PAYOUT';
   amount: number;
   ticketId: string;
+  numbers?: string;
 }
 
 export interface DashboardStats {
