@@ -56,6 +56,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
   const [dateStart, setDateStart] = useState(new Date().toLocaleDateString('en-CA'));
   const [dateEnd, setDateEnd] = useState(new Date().toLocaleDateString('en-CA'));
   const [selectedMachine, setSelectedMachine] = useState('ALL');
+  const [showThermalPrint, setShowThermalPrint] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -157,7 +158,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
           <button onClick={handleExportPDF} className="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center space-x-2">
             <FileText size={16} /> <span>PDF</span>
           </button>
-          <button onClick={handleThermalPrint} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center space-x-2">
+          <button onClick={() => { setShowThermalPrint(true); setTimeout(() => window.print(), 500); }} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center space-x-2">
             <Printer size={16} /> <span>Imprimir 80mm</span>
           </button>
         </div>
@@ -282,6 +283,24 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
           </table>
         </div>
       </div>
+
+      {/* Thermal Report Component - Hidden on screen, visible when printing */}
+      {showThermalPrint && (
+        <div className="hidden print:block">
+          <ThermalReport
+            transactions={transactions}
+            dateStart={dateStart}
+            dateEnd={dateEnd}
+            selectedMachine={selectedMachine}
+            machineName={selectedMachine === 'ALL' ? 'Todas' : userMachines.find(m => m.id === selectedMachine)?.name || 'N/A'}
+            totalBet={totalBet}
+            totalPayout={totalPayout}
+            profit={profit}
+            headerName={appSettings?.ticketName}
+            logoUrl={appSettings?.ticketLogo}
+          />
+        </div>
+      )}
     </div>
   );
 };
