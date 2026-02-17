@@ -134,7 +134,16 @@ const Machines: React.FC<MachinesProps> = ({ user }) => {
                         </div>
                         <div>
                           <div className="font-bold text-slate-800">{m.name}</div>
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">{m.ip_address || 'Sin IP'}</div>
+                          <div className="flex items-center mt-0.5 space-x-2">
+                            <span className="text-[9px] text-slate-400 font-mono tracking-tighter">ID: {m.id.substring(0, 8)}...</span>
+                            <button
+                              onClick={() => handleCopyToken(m.id)}
+                              className="text-slate-300 hover:text-slate-500 transition-colors"
+                              title="Copiar ID Completo"
+                            >
+                              {copiedToken === m.id ? <Check size={10} /> : <Copy size={10} />}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </td>
