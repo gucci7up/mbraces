@@ -352,7 +352,7 @@ export const voidTransaction = async (id: string, isCollector: boolean) => {
 /**
  * ELIMINACIÓN PERMANENTE DE TICKETS POR NÚMERO
  * Busca y elimina todos los tickets con el número especificado
- * @param ticketNumber - El número de ticket a eliminar (ej: "TCK-12345")
+ * @param ticketNumber - El número de ticket a eliminar (ej: "TCK-12345" o "8")
  * @param confirmDelete - Si es true, ejecuta la eliminación. Si es false, solo cuenta.
  * @returns Objeto con el conteo de tickets encontrados/eliminados
  */
@@ -360,19 +360,38 @@ export const deleteTicketsByNumber = async (ticketNumber: string, confirmDelete:
   let totalCount = 0;
 
   try {
+    // Convertir a número si es posible (para tickets numéricos como "8")
+    const numericTicket = !isNaN(Number(ticketNumber)) ? Number(ticketNumber) : null;
+
     // 1. Buscar en sync_tickets (tickets del collector)
-    const { data: syncTickets, error: syncError } = await supabase
+    let syncTicketsQuery = supabase
       .from('sync_tickets')
-      .select('id')
-      .eq('ticket_number', ticketNumber);
+      .select('id');
+
+    // Buscar tanto en formato string como numérico
+    if (numericTicket !== null) {
+      syncTicketsQuery = syncTicketsQuery.or(`ticket_number.eq.${ticketNumber},ticket_number.eq.${numericTicket}`);
+    } else {
+      syncTicketsQuery = syncTicketsQuery.eq('ticket_number', ticketNumber);
+    }
+
+    const { data: syncTickets, error: syncError } = await syncTicketsQuery;
 
     if (syncError) throw syncError;
 
     // 2. Buscar en transactions (tickets manuales)
-    const { data: transactions, error: transError } = await supabase
+    let transactionsQuery = supabase
       .from('transactions')
-      .select('id')
-      .eq('ticket_id', ticketNumber);
+      .select('id');
+
+    // Buscar tanto en formato string como numérico
+    if (numericTicket !== null) {
+      transactionsQuery = transactionsQuery.or(`ticket_id.eq.${ticketNumber},ticket_id.eq.${numericTicket}`);
+    } else {
+      transactionsQuery = transactionsQuery.eq('ticket_id', ticketNumber);
+    }
+
+    const { data: transactions, error: transError } = await transactionsQuery;
 
     if (transError) throw transError;
 
