@@ -198,6 +198,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                           {tx.type === 'BET' ? 'VENTA' : 'PAGO'}
                         </span>
                       </td>
+                      <td className="px-6 py-4">
+                        <p className="text-[11px] font-black text-slate-600">{tx.numbers || '-'}</p>
+                      </td>
                       <td className="px-6 py-4 text-slate-400 text-[11px] font-medium">{tx.date}</td>
                       <td className={`px-6 py-4 text-right font-black ${tx.type === 'BET' ? 'text-emerald-600' : 'text-slate-900'}`}>
                         {tx.type === 'BET' ? '+' : '-'}RD${tx.amount.toLocaleString()}
