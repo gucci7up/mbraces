@@ -171,20 +171,18 @@ def sync_detailed_data():
         cursor = conn.cursor()
         today = date.today().strftime('%Y-%m-%d')
         
-        # 1. Sync Tickets (Probamos todas las tablas de juegos: P, C, G)
-        tablas_tickets = ["TIKETS_VENDIDOS_P", "TIKETS_VENDIDOS_C", "TIKETS_VENDIDOS_G"]
+        # 1. Sync Tickets (Solo TIKETS_VENDIDOS_P según preferencia del usuario)
         all_tickets = []
         
-        for tabla in tablas_tickets:
-            try:
-                cursor.execute(f"SELECT * FROM {tabla} WHERE FECHA = ? LIMIT 50", (today,))
-                rows = cursor.fetchall()
-                for r in rows:
-                    t = dict(r)
-                    t["_source_table"] = tabla # Para trazabilidad
-                    all_tickets.append(t)
-            except Exception as e:
-                print(f"Aviso: Tabla {tabla} no disponible o error: {e}")
+        try:
+            cursor.execute(f"SELECT * FROM TIKETS_VENDIDOS_P WHERE FECHA = ? LIMIT 100", (today,))
+            rows = cursor.fetchall()
+            for r in rows:
+                t = dict(r)
+                t["_source_table"] = "TIKETS_VENDIDOS_P"
+                all_tickets.append(t)
+        except Exception as e:
+            print(f"Aviso: Tabla TIKETS_VENDIDOS_P no disponible o error: {e}")
 
         if all_tickets:
             tickets_payload = []
