@@ -16,7 +16,7 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
   const [loadingIni, setLoadingIni] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  
+
   const isAdmin = user.role === UserRole.SUPER_ADMIN;
 
   useEffect(() => {
@@ -110,7 +110,7 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200/60">
           <h3 className="text-lg font-bold text-slate-800 mb-8 flex items-center">
             <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg mr-3"><Monitor size={20} /></div>
-            Identidad GalgoTrack
+            Identidad {appSettings.appName}
           </h3>
           <div className="flex flex-col items-center space-y-6">
             <div className="relative group">
@@ -119,7 +119,7 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
               </div>
               <label className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-lg border cursor-pointer text-indigo-600"><Upload size={16} /><input type="file" className="hidden" onChange={e => handleFileChange(e, 'app')} /></label>
             </div>
-            <input type="text" value={appSettings.appName} onChange={e => onUpdateSettings({...appSettings, appName: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border rounded-2xl outline-none focus:border-indigo-500 font-bold" placeholder="Nombre App" />
+            <input type="text" value={appSettings.appName} onChange={e => onUpdateSettings({ ...appSettings, appName: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border rounded-2xl outline-none focus:border-indigo-500 font-bold" placeholder="Nombre App" />
             <button onClick={handleSaveIdentity} disabled={isSaving} className="w-full py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all">Guardar Cambios</button>
           </div>
         </div>
@@ -132,10 +132,10 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
           </h3>
           <div className="flex flex-col items-center space-y-6">
             <div className="w-full h-32 bg-slate-50 border border-dashed rounded-2xl flex items-center justify-center relative overflow-hidden">
-               {appSettings.ticketLogo ? <img src={appSettings.ticketLogo} className="h-20 object-contain grayscale" /> : <ImageIcon className="text-slate-300" size={40} />}
-               <label className="absolute bottom-2 right-2 bg-emerald-600 p-2 rounded-lg text-white cursor-pointer shadow-lg"><Upload size={16} /><input type="file" className="hidden" onChange={e => handleFileChange(e, 'ticket')} /></label>
+              {appSettings.ticketLogo ? <img src={appSettings.ticketLogo} className="h-20 object-contain grayscale" /> : <ImageIcon className="text-slate-300" size={40} />}
+              <label className="absolute bottom-2 right-2 bg-emerald-600 p-2 rounded-lg text-white cursor-pointer shadow-lg"><Upload size={16} /><input type="file" className="hidden" onChange={e => handleFileChange(e, 'ticket')} /></label>
             </div>
-            <input type="text" value={appSettings.ticketName} onChange={e => onUpdateSettings({...appSettings, ticketName: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border rounded-2xl outline-none focus:border-emerald-500 font-mono text-sm" placeholder="Título Ticket" />
+            <input type="text" value={appSettings.ticketName} onChange={e => onUpdateSettings({ ...appSettings, ticketName: e.target.value })} className="w-full px-4 py-3 bg-slate-50 border rounded-2xl outline-none focus:border-emerald-500 font-mono text-sm" placeholder="Título Ticket" />
             <button onClick={handleSaveIdentity} disabled={isSaving} className="w-full py-3 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-500 transition-all">Actualizar Tickets</button>
           </div>
         </div>
@@ -143,39 +143,39 @@ const Configuration: React.FC<ConfigurationProps> = ({ user, appSettings, onUpda
 
       {/* MOTOR INI */}
       <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl border border-slate-800">
-          <div className="flex justify-between items-center mb-10">
-            <div className="flex items-center text-white font-black text-xl">
-              <FileCode size={24} className="text-indigo-400 mr-3" />
-              Sincronizador de Motores (.INI)
-            </div>
-            <select value={selectedTerminalId} onChange={e => handleTerminalChange(e.target.value)} className="bg-slate-800 text-white border-none rounded-xl px-4 py-2 font-bold text-sm outline-none">
-              {terminals.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
+        <div className="flex justify-between items-center mb-10">
+          <div className="flex items-center text-white font-black text-xl">
+            <FileCode size={24} className="text-indigo-400 mr-3" />
+            Sincronizador de Motores (.INI)
           </div>
+          <select value={selectedTerminalId} onChange={e => handleTerminalChange(e.target.value)} className="bg-slate-800 text-white border-none rounded-xl px-4 py-2 font-bold text-sm outline-none">
+            {terminals.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </div>
 
-          {currentIni ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {Object.keys(currentIni.dog).map(key => (
-                <div key={key}>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">{key}</label>
-                  <input 
-                    type="number" 
-                    value={(currentIni.dog as any)[key]} 
-                    onChange={e => handleIniChange('dog', key, Number(e.target.value))}
-                    className="w-full bg-slate-800 border border-slate-700 text-indigo-400 font-mono rounded-xl px-4 py-3 outline-none focus:border-indigo-500" 
-                  />
-                </div>
-              ))}
-              <div className="md:col-span-3 pt-6 border-t border-slate-800 mt-4 flex justify-end">
-                <button onClick={handleSyncIni} disabled={isSaving} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center space-x-2">
-                  <Save size={18} />
-                  <span>Sincronizar con Terminal</span>
-                </button>
+        {currentIni ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Object.keys(currentIni.dog).map(key => (
+              <div key={key}>
+                <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">{key}</label>
+                <input
+                  type="number"
+                  value={(currentIni.dog as any)[key]}
+                  onChange={e => handleIniChange('dog', key, Number(e.target.value))}
+                  className="w-full bg-slate-800 border border-slate-700 text-indigo-400 font-mono rounded-xl px-4 py-3 outline-none focus:border-indigo-500"
+                />
               </div>
+            ))}
+            <div className="md:col-span-3 pt-6 border-t border-slate-800 mt-4 flex justify-end">
+              <button onClick={handleSyncIni} disabled={isSaving} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center space-x-2">
+                <Save size={18} />
+                <span>Sincronizar con Terminal</span>
+              </button>
             </div>
-          ) : (
-            <div className="text-center py-10 text-slate-500 font-bold uppercase text-xs tracking-widest">Selecciona una terminal para editar</div>
-          )}
+          </div>
+        ) : (
+          <div className="text-center py-10 text-slate-500 font-bold uppercase text-xs tracking-widest">Selecciona una terminal para editar</div>
+        )}
       </div>
     </div>
   );

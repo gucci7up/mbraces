@@ -89,7 +89,7 @@ const AuthScreen: React.FC = () => {
                     </h1>
                     <p className="text-slate-400 text-lg mb-8 leading-relaxed max-w-sm">
                         {isLogin
-                            ? 'Glad to see you again. Enter your credentials to access the GalgoTrack platform.'
+                            ? 'Glad to see you again. Enter your credentials to access the MBRACES platform.'
                             : 'Already Registered? Login to access your dashboard and manage your terminals.'}
                     </p>
 

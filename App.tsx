@@ -19,9 +19,9 @@ const App: React.FC = () => {
   const [profile, setProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [appSettings, setAppSettings] = useState<AppSettings>({
-    appName: 'GalgoTrack',
+    appName: 'MBRACES',
     appLogo: null,
-    ticketName: 'CONSORCIO GALGOTRACK',
+    ticketName: 'CONSORCIO MBRACES',
     ticketLogo: null
   });
 
@@ -167,7 +167,7 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#0a0f1e] flex flex-col items-center justify-center text-white">
         <Loader2 size={48} className="text-orange-500 animate-spin mb-4" />
-        <h1 className="text-xl font-black tracking-widest uppercase">Cargando GalgoTrack</h1>
+        <h1 className="text-xl font-black tracking-widest uppercase">Cargando {appSettings.appName}</h1>
       </div>
     );
   }

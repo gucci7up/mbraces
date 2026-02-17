@@ -15,7 +15,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [userMachines, setUserMachines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [dateStart, setDateStart] = useState(new Date().toISOString().split('T')[0]);
   const [dateEnd, setDateEnd] = useState(new Date().toISOString().split('T')[0]);
   const [selectedMachine, setSelectedMachine] = useState('ALL');
@@ -47,7 +47,7 @@ const Reports: React.FC<ReportsProps> = ({ user, appSettings }) => {
   const handleExportPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(18);
-    doc.text(appSettings?.ticketName || 'GalgoTrack', 14, 22);
+    doc.text(appSettings?.ticketName || 'MBRACES', 14, 22);
     autoTable(doc, {
       startY: 40,
       head: [['Ticket', 'Fecha', 'Terminal', 'Tipo', 'Monto']],
